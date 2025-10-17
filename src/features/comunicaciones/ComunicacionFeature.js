@@ -3,36 +3,49 @@ import {
   Alert,
   Linking,
   Platform,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 
 const sanitizePhoneNumber = (value) => value.replace(/[^0-9+#*]/g, '');
 
-export default function App() {
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [message, setMessage] = useState('');
+const defaultTheme = {
+  textPrimary: '#f8fafc',
+  textSecondary: '#cbd5f5',
+  inputBackground: 'rgba(15, 23, 42, 0.75)',
+  inputBorder: '#1f2937',
+  accent: '#4fd1c5',
+  accentSecondary: '#38a89d',
+};
 
-  const numeroMandado = useMemo(
+export default function ComunicacionFeature({
+  initialPhoneNumber = '',
+  defaultSmsMessage = '',
+  theme: themeOverrides = {},
+}) {
+  const theme = { ...defaultTheme, ...themeOverrides };
+  const [phoneNumber, setPhoneNumber] = useState(initialPhoneNumber);
+  const [message, setMessage] = useState(defaultSmsMessage);
+
+  const sanitizedNumber = useMemo(
     () => sanitizePhoneNumber(phoneNumber),
     [phoneNumber],
   );
 
+  const trimmedMessage = useMemo(() => message.trim(), [message]);
+
   const handleCall = useCallback(async () => {
-    if (!numeroMandado) {
-      Alert.alert('Número requerido', 'Ingresa un número telefónico válido.');
+    if (!sanitizedNumber) {
+      Alert.alert('Número requerido', 'Ingresá un número telefónico válido.');
       return;
     }
 
-    const telUrl = `tel:${numeroMandado}`;
+    const telUrl = `tel:${sanitizedNumber}`;
 
     try {
-      // adaptaciones para web
       if (Platform.OS === 'web') {
         window.location.href = telUrl;
         return;
@@ -44,24 +57,24 @@ export default function App() {
         return;
       }
 
-      await Linking.openURL(telUrl); //aca es cuando aplico linking
+      await Linking.openURL(telUrl);
     } catch (error) {
       Alert.alert('Error', 'Ocurrió un error al intentar iniciar la llamada.');
     }
-  }, [numeroMandado]);
+  }, [sanitizedNumber]);
 
   const handleSms = useCallback(async () => {
-    if (!numeroMandado) {
-      Alert.alert('Número requerido', 'Ingresa un número telefónico válido.');
+    if (!sanitizedNumber) {
+      Alert.alert('Número requerido', 'Ingresá un número telefónico válido.');
       return;
     }
 
-    const mensajeCortado = message.trim();
-    const mensajeCodeado = encodeURIComponent(mensajeCortado);
-    const paramentroDelBody = mensajeCortado
-      ? Platform.select({ ios: `&body=${mensajeCodeado}`, default: `?body=${mensajeCodeado}` })
+    const encodedMessage = encodeURIComponent(trimmedMessage);
+    const bodyParameter = trimmedMessage
+      ? Platform.select({ ios: `&body=${encodedMessage}`, default: `?body=${encodedMessage}` })
       : '';
-    const smsUrl = `sms:${numeroMandado}${paramentroDelBody}`;
+
+    const smsUrl = `sms:${sanitizedNumber}${bodyParameter}`;
 
     try {
       if (Platform.OS === 'web') {
@@ -79,110 +92,105 @@ export default function App() {
     } catch (error) {
       Alert.alert('Error', 'Ocurrió un error al intentar preparar el mensaje.');
     }
-  }, [message, numeroMandado]);
+  }, [sanitizedNumber, trimmedMessage]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="auto" />
-      <View style={styles.container}>
-        <Text style={styles.title}>Llamadas y SMS</Text>
-        <Text style={styles.subtitle}>
-          Ingresa un número telefónico para realizar una llamada o redactar un SMS.
-        </Text>
+    <View style={styles.section}>
+      <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Contactá a tus anfitriones</Text>
+      <Text style={[styles.sectionSubtitle, { color: theme.textSecondary }]}>
+        Personalizá el número y redactá un mensaje para tus consultas turísticas.
+      </Text>
 
-        <TextInput
-          style={styles.input}
-          value={phoneNumber}
-          onChangeText={setPhoneNumber}
-          keyboardType="phone-pad"
-          placeholder="Número telefónico"
-          placeholderTextColor="#6b7280"
-          maxLength={20}
-        />
+      <TextInput
+        style={[
+          styles.input,
+          {
+            backgroundColor: theme.inputBackground,
+            borderColor: theme.inputBorder,
+            color: theme.textPrimary,
+          },
+        ]}
+        value={phoneNumber}
+        onChangeText={setPhoneNumber}
+        keyboardType="phone-pad"
+        placeholder="Número telefónico"
+        placeholderTextColor={theme.textSecondary}
+        maxLength={20}
+      />
 
-        <TextInput
-          style={[styles.input, styles.messageInput]}
-          value={message}
-          onChangeText={setMessage}
-          placeholder="Mensaje opcional para SMS"
-          placeholderTextColor="#6b7280"
-          multiline
-          numberOfLines={4}
-        />
+      <TextInput
+        style={[
+          styles.input,
+          styles.messageInput,
+          {
+            backgroundColor: theme.inputBackground,
+            borderColor: theme.inputBorder,
+            color: theme.textPrimary,
+          },
+        ]}
+        value={message}
+        onChangeText={setMessage}
+        placeholder="Mensaje opcional para SMS"
+        placeholderTextColor={theme.textSecondary}
+        multiline
+        numberOfLines={4}
+      />
 
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={[styles.button, styles.callButton]} onPress={handleCall}>
-            <Text style={styles.buttonText}>Llamar</Text>
-          </TouchableOpacity>
+      <View style={styles.buttonRow}>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.accent }]}
+          onPress={handleCall}
+        >
+          <Text style={[styles.buttonText, { color: '#0b1220' }]}>Llamar</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.button, styles.smsButton]} onPress={handleSms}>
-            <Text style={styles.buttonText}>Enviar SMS</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: theme.accentSecondary }]}
+          onPress={handleSms}
+        >
+          <Text style={[styles.buttonText, { color: '#0b1220' }]}>Enviar SMS</Text>
+        </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
+  section: {
+    gap: 12,
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
   },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    marginBottom: 8,
-    color: '#111827',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#4b5563',
-    marginBottom: 32,
-    lineHeight: 22,
+  sectionSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
   },
   input: {
     width: '100%',
     borderWidth: 1,
-    borderColor: '#d1d5db',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: '#fff',
-    color: '#111827',
+    fontSize: 15,
   },
   messageInput: {
-    minHeight: 120,
+    minHeight: 110,
     textAlignVertical: 'top',
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-    gap: 16,
+    gap: 12,
   },
   button: {
     flex: 1,
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 12,
     alignItems: 'center',
   },
-  callButton: {
-    backgroundColor: '#10b981',
-  },
-  smsButton: {
-    backgroundColor: '#6366f1',
-  },
   buttonText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#fff',
   },
 });

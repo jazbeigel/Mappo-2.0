@@ -3,14 +3,12 @@ import {
   Alert,
   Linking,
   Platform,
-  SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
-import { StatusBar } from 'expo-status-bar';
 
 const sanitizePhoneNumber = (value) => value.replace(/[^0-9+#*]/g, '');
 
@@ -82,107 +80,127 @@ export default function App() {
   }, [message, numeroMandado]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar style="auto" />
-      <View style={styles.container}>
-        <Text style={styles.title}>Llamadas y SMS</Text>
-        <Text style={styles.subtitle}>
-          Ingresa un número telefónico para realizar una llamada o redactar un SMS.
-        </Text>
+    <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+      <Text style={styles.title}>Llamadas y mensajes</Text>
+      <Text style={styles.subtitle}>
+        Comunícate con guías turísticos, alojamientos y servicios directamente desde tu app.
+      </Text>
 
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Contacto directo</Text>
         <TextInput
           style={styles.input}
           value={phoneNumber}
           onChangeText={setPhoneNumber}
           keyboardType="phone-pad"
           placeholder="Número telefónico"
-          placeholderTextColor="#6b7280"
+          placeholderTextColor="#64748b"
           maxLength={20}
         />
 
+        <View style={styles.actions}>
+          <Text style={styles.helper}>Puedes llamar o enviar un SMS al número ingresado.</Text>
+          <View style={styles.buttonRow}>
+            <Text style={[styles.actionButton, styles.callButton, styles.buttonSpacing]} onPress={handleCall}>
+              Llamar
+            </Text>
+            <Text style={[styles.actionButton, styles.smsButton]} onPress={handleSms}>
+              SMS
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Mensaje personalizado</Text>
+        <Text style={styles.helper}>Redacta un mensaje opcional que se enviará por SMS.</Text>
         <TextInput
           style={[styles.input, styles.messageInput]}
           value={message}
           onChangeText={setMessage}
-          placeholder="Mensaje opcional para SMS"
-          placeholderTextColor="#6b7280"
+          placeholder="Mensaje para tu contacto"
+          placeholderTextColor="#64748b"
           multiline
           numberOfLines={4}
         />
-
-        <View style={styles.buttonRow}>
-          <TouchableOpacity style={[styles.button, styles.callButton]} onPress={handleCall}>
-            <Text style={styles.buttonText}>Llamar</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={[styles.button, styles.smsButton]} onPress={handleSms}>
-            <Text style={styles.buttonText}>Enviar SMS</Text>
-          </TouchableOpacity>
-        </View>
       </View>
-    </SafeAreaView>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#f9fafb',
-  },
   container: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 48,
+    flexGrow: 1,
+    paddingBottom: 120,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
+    color: '#f8fafc',
     marginBottom: 8,
-    color: '#111827',
   },
   subtitle: {
     fontSize: 16,
-    color: '#4b5563',
-    marginBottom: 32,
+    color: '#cbd5f5',
     lineHeight: 22,
+    marginBottom: 16,
+  },
+  card: {
+    backgroundColor: '#111827',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#1f2937',
+    marginBottom: 16,
+  },
+  cardTitle: {
+    color: '#f1f5f9',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  helper: {
+    color: '#94a3b8',
+    fontSize: 13,
+    lineHeight: 18,
+    marginBottom: 12,
   },
   input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#d1d5db',
     borderRadius: 12,
+    backgroundColor: '#0f172a',
+    borderWidth: 1,
+    borderColor: '#1f2937',
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    marginBottom: 16,
-    backgroundColor: '#fff',
-    color: '#111827',
+    color: '#f8fafc',
   },
   messageInput: {
     minHeight: 120,
     textAlignVertical: 'top',
   },
+  actions: {
+    marginTop: 8,
+  },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
-    gap: 16,
   },
-  button: {
+  actionButton: {
     flex: 1,
-    paddingVertical: 14,
+    textAlign: 'center',
+    paddingVertical: 12,
     borderRadius: 12,
-    alignItems: 'center',
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  buttonSpacing: {
+    marginRight: 12,
   },
   callButton: {
-    backgroundColor: '#10b981',
+    backgroundColor: '#22c55e',
   },
   smsButton: {
-    backgroundColor: '#6366f1',
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    backgroundColor: '#38bdf8',
   },
 });

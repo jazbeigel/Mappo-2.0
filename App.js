@@ -149,7 +149,8 @@ const styles = StyleSheet.create({
     color: palette.textPrimary,
     fontSize: 28,
     fontWeight: '700',
-    marginBottom: 4,
+    marginBottom: 40,
+    marginLeft: 100,
   },
   subheading: {
     color: palette.textSecondary,

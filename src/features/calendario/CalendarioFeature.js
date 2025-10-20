@@ -65,7 +65,7 @@ export default function CalendarioFeature() {
     (async () => {
       const granted = await requestPermissions();
       if (granted) {
-        await loadDefaultCalendar();
+        await loadDefaultCalendar();  
       }
     })();
   }, [loadDefaultCalendar, requestPermissions]);
@@ -74,13 +74,37 @@ export default function CalendarioFeature() {
     if (!calendarId) return;
     try {
       const now = new Date();
-      const inThirtyDays = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const eventsResult = await Calendar.getEventsAsync([calendarId], now, inThirtyDays);
-      setEvents(eventsResult);
+      const enTreintaAños = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const eventsResult = await Calendar.getEventsAsync([calendarId], now, enTreintaAños);
+  
+      const toMs = (v) => (v ? new Date(v).getTime() : 0);
+      const keyOf = (ev, idx) =>
+        `${ev?.id ?? 'no-id'}-${toMs(ev?.startDate)}-${toMs(ev?.endDate)}-${idx}`;
+  
+      // Filtra duplicados por combinación fuerte (id + start + end)
+      const seen = new Set();
+      const deduped = [];
+      for (let i = 0; i < eventsResult.length; i++) {
+        const ev = eventsResult[i];
+        const k = `${ev?.id ?? 'no-id'}-${toMs(ev?.startDate)}-${toMs(ev?.endDate)}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          deduped.push(ev);
+        }
+      }
+  
+      // (opcional) Log en dev para entender duplicados
+      if (__DEV__ && deduped.length !== eventsResult.length) {
+        console.warn(
+          `Calendario: deduplicados ${eventsResult.length - deduped.length} eventos (sobre ${eventsResult.length})`
+        );
+      }
+  
+      setEvents(deduped);
     } catch (error) {
       Alert.alert('Error', 'No pudimos cargar los eventos programados.');
     }
-  }, [calendarId]);
+  }, [calendarId]);  
 
   useEffect(() => {
     if (calendarId) {
@@ -182,8 +206,8 @@ export default function CalendarioFeature() {
             No encontramos actividades registradas en los próximos 30 días.
           </Text>
         ) : (
-          events.map((event) => (
-            <View key={event.id} style={styles.event}>
+          events.map((event, idx) => (
+            <View key={`${event.id}-${event.startDate ?? idx}`} style={styles.event}>
               <Text style={styles.eventTitle}>{event.title || 'Actividad sin título'}</Text>
               <Text style={styles.eventMeta}>{formatDate(event.startDate)}</Text>
               {event.location ? <Text style={styles.eventMeta}>{event.location}</Text> : null}

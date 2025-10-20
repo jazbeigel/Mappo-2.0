@@ -31,7 +31,11 @@ export default function HomeFeature({ photos = [] }) {
 
       <FlatList
         data={photos}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, idx) => {
+          // Combina varios campos para evitar colisiones
+          const base = item?.id ?? item?.uri ?? `idx-${idx}`;
+          const salt = item?.timestamp ?? idx;
+          return `${base}-${salt}`;}}
         numColumns={2}
         columnWrapperStyle={styles.row}
         ListEmptyComponent={EmptyState}

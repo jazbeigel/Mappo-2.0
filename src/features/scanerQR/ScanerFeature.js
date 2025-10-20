@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useRef, useState } from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import FeatureActionButton from '../../acceso/AccesoAFeatures.js';
 
@@ -88,7 +88,7 @@ export default function QRScannerFeature() {
         <Text style={styles.description}>
           Necesitamos acceso a la cámara para escanear menús, guías y otros QR.
         </Text>
-        <FeatureActionButton label="Conceder permiso de cámara" onPress={grantCamera} color="#38bdf8" margin="29px" />
+        <FeatureActionButton label="Conceder permiso de cámara" onPress={grantCamera} color="#38bdf8" />
       </View>
     );
   }
@@ -109,7 +109,7 @@ export default function QRScannerFeature() {
             <CameraView
               style={styles.camera}
               onBarcodeScanned={onBarcodeScanned}
-               barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
+              barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             />
           ) : (
             <View style={[styles.camera, styles.cameraPlaceholder]}>
@@ -131,7 +131,12 @@ export default function QRScannerFeature() {
           <Text style={styles.sectionBody} selectable>
             {lastScan.data}
           </Text>
-          <FeatureActionButton label="Abrir enlace nuevamente" onPress={() => openUrl(lastScan.data)} color="#38bdf8" />
+          <FeatureActionButton
+            label="Abrir enlace nuevamente"
+            onPress={() => openUrl(lastScan.data)}
+            color="#38bdf8"
+            style={styles.sectionButton}
+          />
         </View>
       )}
 
@@ -146,46 +151,50 @@ export default function QRScannerFeature() {
 const styles = StyleSheet.create({
   container: {
     paddingBottom: 32,
-    gap: 20,
+    paddingTop: 4,
   },
   center: {
     flex: 1,
     padding: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
   },
   title: {
     color: '#e2e8f0',
     fontSize: 22,
     fontWeight: '700',
+    marginBottom: 12,
   },
   description: {
     color: '#cbd5f5',
     lineHeight: 20,
+    marginBottom: 16,
   },
   section: {
     backgroundColor: '#111827',
     padding: 16,
     borderRadius: 12,
-    gap: 12,
     borderWidth: 1,
     borderColor: '#1f2937',
+    marginBottom: 16,
   },
   sectionTitle: {
     color: '#e2e8f0',
     fontSize: 18,
     fontWeight: '600',
+    marginBottom: 8,
   },
   sectionBody: {
     color: '#cbd5f5',
     lineHeight: 20,
+    marginBottom: 12,
   },
   cameraWrapper: {
     overflow: 'hidden',
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#1f2937',
+    marginBottom: 12,
   },
   camera: {
     width: '100%',
@@ -203,5 +212,9 @@ const styles = StyleSheet.create({
     color: '#64748b',
     fontSize: 12,
     lineHeight: 18,
+    marginTop: 16,
+  },
+  sectionButton: {
+    marginTop: 8,
   },
 });

@@ -88,7 +88,7 @@ export default function QRScannerFeature() {
         <Text style={styles.description}>
           Necesitamos acceso a la cámara para escanear menús, guías y otros QR.
         </Text>
-        <FeatureActionButton label="Conceder permiso de cámara" onPress={grantCamera} color="#38bdf8" margin="29px" />
+        <FeatureActionButton label="Conceder permiso de cámara" onPress={grantCamera} color= '#6DDE78' fontSize= "21" fontWeight='600'/>
       </View>
     );
   }

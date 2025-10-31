@@ -1,19 +1,25 @@
+// ScanerFeature.js
+// Escáner QR usando expo-camera. Si es URL abre navegador; si es teléfono, inicia llamada.
+
 import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import FeatureActionButton from '../../acceso/AccesoAFeatures.js';
 
+// Heurística: ¿parece URL?
 const isProbablyUrl = (raw) => {
   if (!raw) return false;
   const withScheme = /^(https?:\/\/)/i.test(raw) ? raw : `https://${raw}`;
   try {
     const u = new URL(withScheme);
-    // Tiene dominio y TLD
     return !!u.hostname && u.hostname.includes('.');
   } catch {
     return false;
   }
 };
+
+// Heurística: ¿parece teléfono?
+const isPhone = (raw) => /^\+?\d{6,}$/.test(String(raw).replace(/\s|-/g, ''));
 
 export default function QRScannerFeature() {
   const [permission, requestPermission] = useCameraPermissions();
@@ -30,15 +36,11 @@ export default function QRScannerFeature() {
 
   const openUrl = useCallback(async (raw) => {
     if (!raw) return;
-
     const url = /^(https?:\/\/)/i.test(raw) ? raw : `https://${raw}`;
     try {
       const can = await Linking.canOpenURL(url);
-      if (can) {
-        await Linking.openURL(url);
-      } else {
-        Alert.alert('No se pudo abrir el enlace', url);
-      }
+      if (can) await Linking.openURL(url);
+      else Alert.alert('No se pudo abrir el enlace', url);
     } catch (e) {
       Alert.alert('Error al abrir el enlace', String(e?.message ?? e));
     }
@@ -51,10 +53,16 @@ export default function QRScannerFeature() {
 
       setLastScan({ data, type });
 
+      // Integración: URL → navegador; teléfono → llamada
       if (isProbablyUrl(data)) {
         openUrl(data);
+      } else if (isPhone(data)) {
+        const tel = data.replace(/\s|-/g, '');
+        Linking.openURL(`tel:${tel}`).catch(() =>
+          Alert.alert('No se pudo iniciar la llamada', tel)
+        );
       } else {
-        Alert.alert('QR detectado', 'No parece un enlace válido:\n' + data);
+        Alert.alert('QR detectado', 'No parece un enlace o teléfono válido:\n' + data);
       }
 
       setTimeout(() => {
@@ -70,7 +78,6 @@ export default function QRScannerFeature() {
       Alert.alert('Permiso requerido', 'Necesitamos acceso a la cámara para escanear códigos.');
     }
   }, [requestPermission]);
-
 
   if (!permission) {
     return (
@@ -97,8 +104,7 @@ export default function QRScannerFeature() {
     <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
       <Text style={styles.title}>Escáner QR</Text>
       <Text style={styles.description}>
-        Apunta al código QR de un menú, guía turística o cualquier enlace que desees. Si es un link, se abrirá
-        automáticamente en el navegador predeterminado.
+        Apunta al código QR. Si es un link se abrirá; si es un teléfono, iniciaremos la llamada.
       </Text>
 
       <View style={styles.section}>
@@ -131,45 +137,37 @@ export default function QRScannerFeature() {
           <Text style={styles.sectionBody} selectable>
             {lastScan.data}
           </Text>
-          <FeatureActionButton
-            label="Abrir enlace nuevamente"
-            onPress={() => openUrl(lastScan.data)}
-            color="#38bdf8"
-            style={styles.sectionButton}
-          />
+          {isProbablyUrl(lastScan.data) && (
+            <FeatureActionButton
+              label="Abrir enlace nuevamente"
+              onPress={() => openUrl(lastScan.data)}
+              color="#38bdf8"
+              style={styles.sectionButton}
+            />
+          )}
+          {isPhone(lastScan.data) && (
+            <FeatureActionButton
+              label="Llamar nuevamente"
+              onPress={() => Linking.openURL(`tel:${String(lastScan.data).replace(/\s|-/g, '')}`)}
+              color="#22c55e"
+              style={styles.sectionButton}
+            />
+          )}
         </View>
       )}
 
       <Text style={styles.footer}>
-        Tip: Si el QR no incluye "http/https", intentaremos abrirlo igual agregando "https://".
-        En Web, necesitás origen seguro (https) para usar la cámara.
+        Tip: En Web necesitás origen seguro (https) para usar la cámara.
       </Text>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingBottom: 32,
-    paddingTop: 4,
-  },
-  center: {
-    flex: 1,
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    color: '#e2e8f0',
-    fontSize: 22,
-    fontWeight: '700',
-    marginBottom: 12,
-  },
-  description: {
-    color: '#cbd5f5',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
+  container: { paddingBottom: 32, paddingTop: 4 },
+  center: { flex: 1, padding: 24, alignItems: 'center', justifyContent: 'center' },
+  title: { color: '#e2e8f0', fontSize: 22, fontWeight: '700', marginBottom: 12 },
+  description: { color: '#cbd5f5', lineHeight: 20, marginBottom: 16 },
   section: {
     backgroundColor: '#111827',
     padding: 16,
@@ -178,43 +176,12 @@ const styles = StyleSheet.create({
     borderColor: '#1f2937',
     marginBottom: 16,
   },
-  sectionTitle: {
-    color: '#e2e8f0',
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-  sectionBody: {
-    color: '#cbd5f5',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  cameraWrapper: {
-    overflow: 'hidden',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#1f2937',
-    marginBottom: 12,
-  },
-  camera: {
-    width: '100%',
-    aspectRatio: 3 / 4,
-  },
-  cameraPlaceholder: {
-    backgroundColor: '#0f172a',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  placeholderText: {
-    color: '#64748b',
-  },
-  footer: {
-    color: '#64748b',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 16,
-  },
-  sectionButton: {
-    marginTop: 8,
-  },
+  sectionTitle: { color: '#e2e8f0', fontSize: 18, fontWeight: '600', marginBottom: 8 },
+  sectionBody: { color: '#cbd5f5', lineHeight: 20, marginBottom: 12 },
+  cameraWrapper: { overflow: 'hidden', borderRadius: 12, borderWidth: 1, borderColor: '#1f2937', marginBottom: 12 },
+  camera: { width: '100%', aspectRatio: 3 / 4 },
+  cameraPlaceholder: { backgroundColor: '#0f172a', alignItems: 'center', justifyContent: 'center' },
+  placeholderText: { color: '#64748b' },
+  footer: { color: '#64748b', fontSize: 12, lineHeight: 18, marginTop: 16 },
+  sectionButton: { marginTop: 8 },
 });

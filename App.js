@@ -1,12 +1,29 @@
+// App.js
+// React Navigation con Bottom Tabs usando una tabBar personalizada
+// que replica el estilo del "bottom bar" del documento inferior.
+// Todo el resto (layout, header, tarjetas, etc.) mantiene el estilo del doc inferior.
+
 import React, { useMemo, useState } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  SafeAreaView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+
+// FEATURES (como en el doc inferior)
 import ComunicacionesFeature from './src/features/comunicaciones/ComunicacionFeature';
 import CamaraFeature from './src/features/camara/CamaraFeature';
 import CalendarioFeature from './src/features/calendario/CalendarioFeature';
 import ScanerFeature from './src/features/scanerQR/ScanerFeature';
 import HomeFeature from './src/features/home/HomeFeature';
+
+const Tab = createBottomTabNavigator();
 
 const palette = {
   background: '#0f172a',
@@ -56,31 +73,8 @@ const FEATURES = [
   },
 ];
 
-export default function App() {
-  const [activeFeatureKey, setActiveFeatureKey] = useState('home');
-  const [photos, setPhotos] = useState([]);
-
-  const ActiveFeature = useMemo(() => {
-    const selected = FEATURES.find((feature) => feature.key === activeFeatureKey);
-    return selected?.component ?? HomeFeature;
-  }, [activeFeatureKey]);
-
-  const featureProps = useMemo(() => {
-    switch (activeFeatureKey) {
-      case 'home':
-        return { photos };
-      case 'camara':
-        return {
-          onPhotoCaptured: (photo) => {
-            setPhotos((prev) => [photo, ...prev]);
-            setActiveFeatureKey('home');
-          },
-        };
-      default:
-        return {};
-    }
-  }, [activeFeatureKey, photos]);
-
+// --- Layout general idéntico al doc inferior ---
+function ScreenLayout({ children }) {
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="light" />
@@ -92,46 +86,133 @@ export default function App() {
           </Text>
         </View>
 
-        <View style={styles.featureContainer}>
-          <ActiveFeature {...featureProps} />
-        </View>
-
-        <View style={styles.bottomBar}>
-          {FEATURES.map((feature) => {
-            const Icon = feature.icon;
-            const isActive = feature.key === activeFeatureKey;
-            const iconColor = feature.highlight
-              ? palette.background
-              : isActive
-                ? palette.accent
-                : palette.textSecondary;
-            const labelStyles = [styles.navLabel, isActive && styles.navLabelActive];
-            if (feature.highlight) {
-              labelStyles.push(styles.navLabelHighlight);
-            }
-            return (
-              <TouchableOpacity
-                key={feature.key}
-                style={[styles.navItem, feature.highlight && styles.navHighlight, isActive && styles.navItemActive]}
-                onPress={() => setActiveFeatureKey(feature.key)}
-                activeOpacity={0.85}
-              >
-                <Icon
-                  name={feature.iconName}
-                  size={feature.highlight ? 28 : 24}
-                  color={isActive && !feature.highlight ? palette.accent : iconColor}
-                />
-                <Text style={labelStyles}>{feature.title}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <View style={styles.featureContainer}>{children}</View>
       </View>
     </SafeAreaView>
   );
 }
 
+// --- TabBar custom que replica el "bottomBar" del doc inferior ---
+function CustomTabBar({ state, descriptors, navigation }) {
+  return (
+    <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
+      {/* Contenedor flotante con la misma estética */}
+      <View style={styles.bottomBar}>
+        {state.routes.map((route, index) => {
+          const isFocused = state.index === index;
+          const options = descriptors[route.key].options;
+
+          // Mapeamos contra FEATURES por key (name = key)
+          const feature = FEATURES.find((f) => f.key === route.name);
+          const Icon = feature?.icon ?? Ionicons;
+          const iconName = feature?.iconName ?? 'help-outline';
+
+          const iconColor = feature?.highlight
+            ? palette.background
+            : isFocused
+              ? palette.accent
+              : palette.textSecondary;
+
+          const labelStyles = [styles.navLabel, isFocused && styles.navLabelActive];
+          if (feature?.highlight) labelStyles.push(styles.navLabelHighlight);
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          return (
+            <TouchableOpacity
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              onPress={onPress}
+              activeOpacity={0.85}
+              style={[
+                styles.navItem,
+                feature?.highlight && styles.navHighlight,
+                isFocused && styles.navItemActive,
+              ]}
+            >
+              <Icon
+                name={iconName}
+                size={feature?.highlight ? 28 : 24}
+                color={isFocused && !feature?.highlight ? palette.accent : iconColor}
+              />
+              <Text style={labelStyles}>{options.title ?? feature?.title ?? route.name}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export default function App() {
+  // Estado compartido (como en el doc inferior)
+  const [photos, setPhotos] = useState([]);
+
+  // Para inyectar props a Home y Cámara (idéntico comportamiento del doc inferior)
+  const HomeWithProps = useMemo(
+    () => () =>
+      (
+        <ScreenLayout>
+          <HomeFeature photos={photos} />
+        </ScreenLayout>
+      ),
+    [photos]
+  );
+
+  const CamaraWithProps = useMemo(
+    () => ({ navigation }) =>
+      (
+        <ScreenLayout>
+          <CamaraFeature
+            onPhotoCaptured={(photo) => {
+              setPhotos((prev) => [photo, ...prev]);
+              navigation.navigate('home'); // volver a Inicio al capturar (mismo flujo que el doc inferior)
+            }}
+          />
+        </ScreenLayout>
+      ),
+    []
+  );
+
+  const Wrap = (Component) => () =>
+    (
+      <ScreenLayout>
+        <Component />
+      </ScreenLayout>
+    );
+
+  return (
+    <NavigationContainer>
+      <Tab.Navigator
+        initialRouteName="home"
+        screenOptions={{
+          headerShown: false, // usamos nuestro header propio
+          tabBarStyle: { height: 0 }, // ocultamos el tabBar nativo (lo reemplaza el CustomTabBar)
+        }}
+        tabBar={(props) => <CustomTabBar {...props} />}
+      >
+        <Tab.Screen name="home" component={HomeWithProps} options={{ title: 'Inicio' }} />
+        <Tab.Screen name="camara" component={CamaraWithProps} options={{ title: 'Cámara' }} />
+        <Tab.Screen name="scaner" component={Wrap(ScanerFeature)} options={{ title: 'QR' }} />
+        <Tab.Screen name="calendario" component={Wrap(CalendarioFeature)} options={{ title: 'Agenda' }} />
+        <Tab.Screen name="comunicaciones" component={Wrap(ComunicacionesFeature)} options={{ title: 'Contacto' }} />
+      </Tab.Navigator>
+    </NavigationContainer>
+  );
+}
+
 const styles = StyleSheet.create({
+  // --- estilos del doc inferior ---
   safeArea: {
     flex: 1,
     backgroundColor: palette.background,
@@ -165,15 +246,17 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     padding: 20,
   },
+
+  // --- bottom bar (idéntico look & feel al doc inferior) ---
   bottomBar: {
     position: 'absolute',
     left: 16,
     right: 16,
     bottom: 20,
-    backgroundColor: '#020617',
+    backgroundColor: '#020617',          // heredado del archivo de arriba
     borderRadius: 30,
     borderWidth: 1,
-    borderColor: '#1e293b',
+    borderColor: '#1e293b',              // heredado del archivo de arriba
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 18,

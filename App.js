@@ -93,12 +93,13 @@ function ScreenLayout({ children }) {
 }
 
 // --- TabBar custom que replica el "bottomBar" del doc inferior ---
-function CustomTabBar({ state, descriptors, navigation }) {
+function CustomTabBar({ state /*para ver en estrado esta*/, descriptors, navigation }) {
   return (
     <View pointerEvents="box-none" style={StyleSheet.absoluteFill}>
       {/* Contenedor flotante con la misma estética */}
       <View style={styles.bottomBar}>
-        {state.routes.map((route, index) => {
+        {state.routes.map((route, index) => { 
+          //mapea y te dirije a la pagina que estas llamando
           const isFocused = state.index === index;
           const options = descriptors[route.key].options;
 

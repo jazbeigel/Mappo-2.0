@@ -5,7 +5,7 @@ import FeatureActionButton from '../../acceso/AccesoAFeatures';
 
 const DEFAULT_DURATION = 90 * 60 * 1000; // 1h30m
 
-const formatDate = (value) => {
+const formatDate = (value) => { //formatea la fecha
   try {
     return new Intl.DateTimeFormat('es-AR', {
       dateStyle: 'medium',
@@ -17,7 +17,8 @@ const formatDate = (value) => {
 };
 
 export default function CalendarioFeature() {
-  const [permissionGranted, setPermissionGranted] = useState(false);
+  //para guardar y actrualizar constantemente los datos
+  const [permissionGranted, setPermissionGranted] = useState(false); //permiso de acceso
   const [calendarId, setCalendarId] = useState(null);
   const [title, setTitle] = useState('Tour guiado');
   const [location, setLocation] = useState('Centro histórico');
@@ -25,6 +26,8 @@ export default function CalendarioFeature() {
   const [events, setEvents] = useState([]);
 
   const requestPermissions = useCallback(async () => {
+
+    //permisos para activar el calendario
     try {
       const { status } = await Calendar.requestCalendarPermissionsAsync();
       let remindersStatus = 'granted';
@@ -45,6 +48,7 @@ export default function CalendarioFeature() {
   }, []);
 
   const loadDefaultCalendar = useCallback(async () => {
+    //los va mostrando (y guardando) los eventos
     try {
       let defaultCalendar = null;
       if (Calendar.getDefaultCalendarAsync) {

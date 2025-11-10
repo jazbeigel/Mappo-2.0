@@ -15,6 +15,7 @@ export default function CamaraFeature({ onPhotoCaptured }) {
   const cameraRef = useRef(null);
 
   const ensurePermission = useCallback(async () => {
+    //permiso para acceder a la camara del cel
     if (permission?.granted) return true;
     const { granted } = await requestPermission();
     if (!granted) {
@@ -23,6 +24,7 @@ export default function CamaraFeature({ onPhotoCaptured }) {
     return granted;
   }, [permission?.granted, requestPermission]);
 
+  //chequea que los permisos esten bien
   const toggleCamera = useCallback(async () => {
     const hasPermission = await ensurePermission();
     if (!hasPermission) return;
@@ -32,6 +34,7 @@ export default function CamaraFeature({ onPhotoCaptured }) {
 
   const capture = useCallback(async () => {
     try {
+      //rechazo al sacar foto
       if (!cameraRef.current) return;
       const photo = await cameraRef.current.takePictureAsync?.({ quality: 0.7 });
       if (!photo?.uri) {
